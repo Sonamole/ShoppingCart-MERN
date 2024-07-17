@@ -7,8 +7,9 @@ var exphbs = require('express-handlebars');//Handlebars view engine for Express.
 var userRouter = require('./routes/user');//These lines use Node.js require() function to import the router modules (user.js and admin.js) into your main application file (app.js).
 var adminRouter = require('./routes/admin');
 var app = express(); //express() is a function provided by the Express.js framework. When called, it creates a new Express application.var app declares a variable named app and assigns the newly created Express application instance to it.
-var fileUpload=require('express-fileupload')// middleware for handling file uploads in Express applications. 
+var fileUpload=require('express-fileupload')// middleware for handling file uploads in Express applications.
 
+var db=require('./config/connection')
 
 // view engine setup .configures Express to use Handlebars (hbs) as the templating engine and sets the directory where your views (templates) are located.
 app.set('views', path.join(__dirname, 'views'));
@@ -32,6 +33,14 @@ app.use(express.static(path.join(__dirname, 'public')));//Middleware to serve st
 
 app.use(fileUpload())
 
+db.connect((err) => {
+  if (err) {
+      console.error('Failed to connect to MongoDB', err);
+      process.exit(1); // Exit the application if the connection fails
+  } else {
+      console.log('Connected to MongoDB');
+  }
+});
 
 app.use('/', userRouter); //This line mounts the userRouter middleware at the root path ('/') of your application.
 app.use('/admin', adminRouter);//This line mounts the adminRouter middleware at the /admin path of your application.
