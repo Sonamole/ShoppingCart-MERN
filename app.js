@@ -1,14 +1,14 @@
 var createError = require('http-errors');//Used to create HTTP errors for Express applications.
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
-var exphbs = require('express-handlebars');
-
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
-
+var express = require('express');// The main Express.js framework.
+var path = require('path');//A Node.js core module used for handling file and directory paths.
+var cookieParser = require('cookie-parser');//Middleware to parse cookies attached to the client request object
+var logger = require('morgan');//Middleware for logging HTTP requests and errors.
+var exphbs = require('express-handlebars');//Handlebars view engine for Express.js, allowing you to use Handlebars templates.
+var userRouter = require('./routes/user');//These lines use Node.js require() function to import the router modules (user.js and admin.js) into your main application file (app.js).
+var adminRouter = require('./routes/admin');
 var app = express(); //express() is a function provided by the Express.js framework. When called, it creates a new Express application.var app declares a variable named app and assigns the newly created Express application instance to it.
+var fileUpload=require('express-fileupload')// middleware for handling file uploads in Express applications. 
+
 
 // view engine setup .configures Express to use Handlebars (hbs) as the templating engine and sets the directory where your views (templates) are located.
 app.set('views', path.join(__dirname, 'views'));
@@ -21,14 +21,20 @@ app.engine('hbs', exphbs.engine({ //This line sets up a new view engine for your
   partialsDir: __dirname + '/views/partials'//specifies the directory where your partial templates are stored.Partial templates are smaller pieces of a template that can be reused in different views, like a navigation bar or footer.
 }));
 
-app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+
+
+app.use(logger('dev'));// Logging middleware for development environment
+app.use(express.json());// Middleware to parse JSON bodies
+app.use(express.urlencoded({ extended: true }));// Middleware to parse URL-encoded bodies
+app.use(cookieParser());// Middleware to parse cookies from HTTP headers
+app.use(express.static(path.join(__dirname, 'public')));//Middleware to serve static files from the 'public' directory
+
+app.use(fileUpload())
+
+
+app.use('/', userRouter); //This line mounts the userRouter middleware at the root path ('/') of your application.
+app.use('/admin', adminRouter);//This line mounts the adminRouter middleware at the /admin path of your application.
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
