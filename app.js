@@ -10,6 +10,7 @@ var app = express(); //express() is a function provided by the Express.js framew
 var fileUpload=require('express-fileupload')// middleware for handling file uploads in Express applications.
 
 var db=require('./config/connection')
+var session=require('express-session')
 
 // view engine setup .configures Express to use Handlebars (hbs) as the templating engine and sets the directory where your views (templates) are located.
 app.set('views', path.join(__dirname, 'views'));
@@ -31,7 +32,10 @@ app.use(express.urlencoded({ extended: true }));// Middleware to parse URL-encod
 app.use(cookieParser());// Middleware to parse cookies from HTTP headers
 app.use(express.static(path.join(__dirname, 'public')));//Middleware to serve static files from the 'public' directory
 
+
 app.use(fileUpload())
+app.use(session({secret:"Key",cookie:{maxAge:3600000 }}))
+
 
 db.connect((err) => {
   if (err) {
