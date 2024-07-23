@@ -1,5 +1,7 @@
 var db=require('../config/connection')
 var collection=require('../config/collections')
+var objectId = require('mongoose').Types.ObjectId;
+
 
 module.exports = {
     addProduct: (product) => { // takes product as an argument, the product data passed from admin.js post route(addProduct(req.body);) to be inserted into the database.
@@ -25,6 +27,45 @@ module.exports = {
             let products= await database.collection(collection.PRODUCT_COLLECTION).find().toArray()//Inside the Promise, we use the await keyword to pause execution until the find().toArray() operation completes.fetches all documents (products) from the PRODUCT_COLLECTION collection and converts them into an array.
             resolve(products) //If the find().toArray() operation is successful, the promise is resolved with the fetched products array.
         })
+    },
+
+    deleteProduct:(proId)=>{
+        return new Promise((resolve,reject)=>{
+            const database = db.get();
+            database.collection(collection.PRODUCT_COLLECTION).removeOne({_id: new objectId(proId)}).then((response)=>{
+                console.log(response);
+                resolve(response)
+            })
+
+        })
+    },
+
+    getAllProductDetails:(proId)=>{
+        return new Promise((resolve,reject)=>{
+            const database = db.get();
+            database.collection(collection.PRODUCT_COLLECTION).findOne({_id: new objectId(proId)}).then((response)=>{
+            resolve(response)
+            })
+        })
+
+    },
+    updateProduct:(proId,proDetails)=>{
+        return new Promise((resolve,reject)=>{
+            const database = db.get();
+            database.collection(collection.PRODUCT_COLLECTION)
+            .updateOne({_id: new objectId(proId)},{
+                $set:{
+                    Name:proDetails.Name,
+                    Description:proDetails.Description,
+                    Category:proDetails.Category,
+                    Price:proDetails.Price,
+                }
+            }).then((response)=>{
+                resolve()
+            })
+        })
+
+
     }
 }
 

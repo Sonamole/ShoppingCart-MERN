@@ -32,22 +32,14 @@ router.get('/signup',(req,res)=>{
 
 router.post('/signup',(req,res)=>{
   userHelper.doSignup(req.body).then((response)=>{
+    req.session.loggedIn=true
+    req.session.user=response
     res.redirect('/')
   })
 })
 
 
 
-// router.get('/login',(req,res)=>{
-//   if(req.session.loggedIn)
-//   {
-//     res.redirect('/')
-//   }
-//   else{
-//     res.render('user/login',{"Login Error":req.session.loginErr})
-//     req.session.loginErr=false
-//   }
-// })
 
 router.get('/login', (req, res) => {
   if (req.session.loggedIn) {
@@ -84,7 +76,9 @@ router.get('/cart',verifyLogin,(req,res)=>{
   res.render('user/cart')
 })
 
-
+router.get('/add-to-cart/:id',(req,res)=>{
+  userHelper.addToCart(req.params.id,req.session.user._id)
+})
 
 
 
