@@ -1,6 +1,8 @@
 var db = require('../config/connection'); // Import the database configuration
 var collection = require('../config/collections'); // Import the collections configuration
 const bcrypt = require('bcrypt'); // Import bcrypt for password hashing
+var objectId = require('mongoose').Types.ObjectId;
+
 
 module.exports = {
     doSignup: (userData) => {
@@ -49,5 +51,69 @@ module.exports = {
                 reject({ success: false, message: 'Internal server error' }); // Reject the promise if an error occurs
             }
         });
+    },
+
+
+    addToCart:(proId, userId) => {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const database = db.get();
+                let userCart = await database.collection(collection.CART_COLLECTION).findOne({ user: new objectId(userId) });
+                if (userCart) {
+                        database.collection(collection.CART_COLLECTION)
+                            .updateOne({ user: new objectId(userId) },
+                             {
+                                $push: { products: new objectId(proId) }
+                            })
+                            .then(response => {
+                                resolve(response);
+                            });
+
+                } else {
+                    let cartObj = {
+                        user: new objectId(userId),
+                        products: [new objectId(proId)]
+                    };
+                    database.collection(collection.CART_COLLECTION).insertOne(cartObj).then(response => {
+                        resolve(response);
+                    });
+                }
+            } catch (err) {
+                console.error('Error in addToCart:', err);
+                reject(err);
+            }
+        });
+    },
+
+    getCartProducts:(userId)=>{
+        return new Promise(async(resolve,reject)=>{
+            const database = db.get();
+            let cartItems=await database.collection(collection.CART_COLLECTION).aggregate([
+            {
+                $match:{user: new objectId(userId)}
+            },
+            {
+                $lookup:{
+                    from:collection.PRODUCT_COLLECTION,
+                    let:{prodList:'$products'},
+                    pipeline:[
+                        {
+                            $match:{
+                                $expr:{
+                                    $in:['$_id',"$$prodList"]
+                                }
+                            }
+                        }
+                    ],
+                    as:'cartItems'
+
+                }
+            }
+            ]).toArray()
+            resolve(cartItems[0].cartItems)
+        })
     }
+
+
+
 };
