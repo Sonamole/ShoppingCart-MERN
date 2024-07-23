@@ -43,7 +43,7 @@ module.exports = {
     getAllProductDetails:(proId)=>{
         return new Promise((resolve,reject)=>{
             const database = db.get();
-            database.collection(collection.PRODUCT_COLLECTION).findOne({_id: new objectId(proId)}).then((response)=>{
+            database.collection(collection.PRODUCT_COLLECTION).findOne({_id: new objectId(proId)}).then((response)=>{ //new ObjectId(proId): This converts the proId (which is a string) into an ObjectId type, which is necessary for querying by _id in MongoDB.
             resolve(response)
             })
         })
@@ -64,8 +64,6 @@ module.exports = {
                 resolve()
             })
         })
-
-
     }
 }
 

@@ -19,7 +19,7 @@ router.get('/add-product',function(req,res){
 
 router.post('/add-product', async (req, res) => {
   try {
-      const id = await productHelpers.addProduct(req.body);//req.body contains form data sent from the client
+      const id = await productHelpers.addProduct(req.body);//req.body contains form data sent from the client.This(req.body) is accepted on addProduct function on producthelpers as the name (product) parameter
       // console.log(id);
       let image = req.files.Image; // Get the uploaded image file
       await image.mv(`./public/product-images/${id}.jpg`);//Moves the uploaded image to a folder named product-images under public, renaming it to ${id}.jpg where id is the ID of the newly inserted product.
@@ -32,13 +32,15 @@ router.post('/add-product', async (req, res) => {
 });
 
 
-router.get('/delete-product/:id',(req,res)=>{
-    let proId=req.params.id
-    // console.log(proId);
-    productHelpers.deleteProduct(proId).then((response)=>{
-      res.redirect('/admin')
-    })
-})
+
+router.get('/delete-product/:id', (req, res) => {
+  let proId = req.params.id; // Extract the product ID from the route parameters
+  // console.log(proId);
+  productHelpers.deleteProduct(proId).then((response) => {  // Call the deleteProduct helper function passing the product ID
+      res.redirect('/admin');// Redirect to the admin page after the product is deleted
+  });
+});
+
 
 
 
@@ -47,6 +49,7 @@ router.get('/edit-product/:id',async(req,res)=>{
   console.log(product);
   res.render('admin/edit-product',{product})
 })
+
 
 router.post('/edit-product/:id', (req, res) => {
   let id = req.params.id;

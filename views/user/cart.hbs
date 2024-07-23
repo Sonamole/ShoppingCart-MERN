@@ -6,23 +6,66 @@
                     <th scope="col">Item</th>
                     <th scope="col">Title</th>
                     <th scope="col">Quantity</th>
+                    <th scope="col">Actions</th> <!-- Added Actions column -->
                 </tr>
             </thead>
             <tbody>
-                {{#each products  }}
+                {{#each products}}
                 <tr>
-                    <td><img src="/product-images/{{this._id}}" alt="" style="width: 70px; height:70px"> </td>
-                    <td>{{this.Name  }} </td>
+                    <td><img src="/product-images/{{this.product._id}}.jpg" alt="{{this.product.Name}}" style="width: 70px; height:70px"></td>
+                    <td>{{this.product.Name}}</td>
                     <td>
-                        <button class="cart-item-count mr-3">-</button>
-                        <button class="cart-item-count ml-3">+</button>
+                        <button class="btn btn-secondary mr-3" onclick="changeQuantity('{{this._id}}', '{{this.product._id}}', -1)">-</button>
+                        {{this.quantity}}
+                        <button class="btn btn-secondary ml-3" onclick="changeQuantity('{{this._id}}', '{{this.product._id}}', 1)">+</button>
                     </td>
                     <td>
-                        <a href="btn btn-danger">Remove</a>
+                        <button class="btn btn-danger" onclick="removeItem('{{this._id}}')">Remove</button> <!-- Added onclick handler for Remove -->
                     </td>
                 </tr>
-                {{/each  }}
+                {{/each}}
             </tbody>
         </table>
     </div>
 </section>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> <!-- Ensure jQuery is included -->
+
+<script>
+    function changeQuantity(cartId, proId, count) {
+        $.ajax({
+            url: '/change-product-quantity',
+            method: 'POST',
+            data: {
+                cart: cartId,
+                product: proId,
+                count: count
+            },
+            success: (response) => {
+                alert('Quantity updated successfully!');
+                location.reload(); // Optionally reload to see updated cart
+            },
+            error: (jqXHR, textStatus, errorThrown) => {
+                alert('Error: ' + textStatus + ' - ' + errorThrown);
+            }
+        });
+    }
+
+    function removeItem(cartId) {
+        $.ajax({
+            url: '/remove-from-cart',
+            method: 'POST',
+            data: {
+                cart: cartId
+            },
+            success: (response) => {
+                alert('Item removed successfully!');
+                location.reload(); // Optionally reload to see updated cart
+            },
+            error: (jqXHR, textStatus, errorThrown) => {
+                alert('Error: ' + textStatus + ' - ' + errorThrown);
+            }
+        });
+    }
+    
+</script>

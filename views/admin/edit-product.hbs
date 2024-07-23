@@ -18,7 +18,7 @@
 
                     <label for="">Image</label>
                     <img src="/product-images/{{product._id}}.jpg" alt="" style="width: 100px;height:auto" id="imgView" class="pt-3">
-                    <input type="file" name="Image" class="form-control" onchange="viewImage(event)">
+                    <input type="file" name="Image" class="form-control" onchange="viewImage(event)"> {{!-- Calls the viewImage(event) function when the file selection changes. --}}
 
                     <button type="submit" class="btn btn-success mt-4">Submit</button>
                 </form>
@@ -29,6 +29,6 @@
 
 <script>
     function viewImage(event){
-        document.getElementById('imgView').src=URL.createObjectURL(event.target.files[0])
+        document.getElementById('imgView').src=URL.createObjectURL(event.target.files[0]) /// Get the image element by its ID 'imgView'. then ,Creates a URL representing the selected file. event.target.files[0] refers to the first file selected by the user.Then place the created URL on src attribute
     }
 </script>

@@ -10,7 +10,7 @@ var app = express(); //express() is a function provided by the Express.js framew
 var fileUpload=require('express-fileupload')// middleware for handling file uploads in Express applications.
 
 var db=require('./config/connection')
-var session=require('express-session')
+var session=require('express-session') //// Import the express-session module.To implement session
 
 // view engine setup .configures Express to use Handlebars (hbs) as the templating engine and sets the directory where your views (templates) are located.
 app.set('views', path.join(__dirname, 'views'));
@@ -34,10 +34,13 @@ app.use(express.static(path.join(__dirname, 'public')));//Middleware to serve st
 
 
 app.use(fileUpload())
-app.use(session({secret:"Key",cookie:{maxAge:3600000 }}))
 
+app.use(session({// Set up session management
+  secret: "Key", // Secret key for signing the session ID cookie
+  cookie: { maxAge: 3600000 } // Session cookie will expire after 1 hour
+}));
 
-db.connect((err) => {
+db.connect((err) => { //db.connect: This is a method provided by the database client (such as the mongodb or mongoose package) to establish a connection to the MongoDB server.
   if (err) {
       console.error('Failed to connect to MongoDB', err);
       process.exit(1); // Exit the application if the connection fails
