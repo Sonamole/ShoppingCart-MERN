@@ -16,7 +16,7 @@ const verifyLogin=(req,res,next)=>{
 
 router.get('/',async function(req, res, next) {
   let user=req.session.user
-  console.log("User session checking",user);
+  // console.log("User session checking",user);
   let cartCount=null
   if(req.session.user){
     cartCount= await userHelper.getCartCount(req.session.user._id)
@@ -78,29 +78,59 @@ router.get('/logout',(req,res)=>{
 
 router.get('/cart',verifyLogin,async(req,res)=>{
   let products=await userHelper.getCartProducts(req.session.user._id)
-  console.log("Cart Products:",products);
-  res.render('user/cart',{products,user:req.session.user})
+  let totalValue=await userHelper.getTotalAmount(req.session.user._id)
+  let user=req.session.user._id
+  // console.log('***'+req.session.user._id);
+  // console.log("Cart Products:",products);
+  res.render('user/cart',{products,user,totalValue})
 })
 
 
 router.get('/add-to-cart/:id',verifyLogin,(req,res)=>{
   console.log("api call");
   userHelper.addToCart(req.params.id,req.session.user._id).then(()=>{
-    console.log('Product added successflly');
+    // console.log('Product added successflly');
     // res.redirect('/')
     res.json({status:true})
   })
 })
 
 
-router.post('/change-product-quantity',(req,res,next)=>{
-  console.log('lalala');
-  userHelper.changeProductQuantity(req.body).then(()=>{
-    console.log('cinnubg');
+router.post('/change-product-quantity/',(req,res,next)=>{
+  // console.log('lalala',req.body);
+  userHelper.changeProductQuantity(req.body).then(async(response)=>{
+    response.total=await userHelper.getTotalAmount(req.body.user)
+    res.json(response)
   })
 })
 
+router.get('/place-order',verifyLogin,async(req,res)=>{
+  let total=await userHelper.getTotalAmount(req.session.user._id)
+  res.render('user/place-order',{total,user:req.session.user})
+})
 
+router.post('/place-order',async(req,res)=>{
+  // console.log(req.body);
+  let products=await userHelper.getCartProductList(req.body.userId)
+  let totalPrice=await userHelper.getTotalAmount(req.body.userId)
+  userHelper.placeOrder(req.body,products,totalPrice).then((response)=>{
+    res.json({status:true})
+  })
+})
+
+router.get('/order-success',(req,res)=>{
+  res.render('user/order-success',{user:req.session.user})
+})
+
+router.get('/orders',async(req,res)=>{
+  let orders=await userHelper.getUserOrders(req.session.user._id)
+  res.render('user/orders',{user:req.session.user,orders})
+})
+
+router.get('/view-order-products/:id',async(req,res)=>{
+  let products=await userHelper.getOrderProducts(req.params.id)
+  res.render('user/view-order-products',{user:req.session.user,products})
+})
 
 
 module.exports = router;

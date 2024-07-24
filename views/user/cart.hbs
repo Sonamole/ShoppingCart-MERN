@@ -5,6 +5,7 @@
                 <tr>
                     <th scope="col">Item</th>
                     <th scope="col">Title</th>
+                     <th scope="col">Price</th>
                     <th scope="col">Quantity</th>
                     <th scope="col">Actions</th> <!-- Added Actions column -->
                 </tr>
@@ -14,58 +15,64 @@
                 <tr>
                     <td><img src="/product-images/{{this.product._id}}.jpg" alt="{{this.product.Name}}" style="width: 70px; height:70px"></td>
                     <td>{{this.product.Name}}</td>
+                    <td>{{this.product.Price}}</td>
                     <td>
-                        <button class="btn btn-secondary mr-3" onclick="changeQuantity('{{this._id}}', '{{this.product._id}}', -1)">-</button>
-                        {{this.quantity}}
-                        <button class="btn btn-secondary ml-3" onclick="changeQuantity('{{this._id}}', '{{this.product._id}}', 1)">+</button>
+
+                        <button class="btn btn-secondary mr-3" onclick="changeQuantity('{{this._id}}', '{{this.product._id}}','{{ ../user}}', -1)">-</button>
+                        {{!-- {{this.quantity}} --}}
+                        <span id="{{this.product._id }}">{{this.quantity}}</span>
+                        <button class="btn btn-secondary ml-3" onclick="changeQuantity('{{this._id}}', '{{this.product._id}}','{{ ../user }}', 1)">+</button>
                     </td>
                     <td>
-                        <button class="btn btn-danger" onclick="removeItem('{{this._id}}')">Remove</button> <!-- Added onclick handler for Remove -->
+                        <button class="btn btn-danger" >Remove</button> <!-- Added onclick handler for Remove -->
                     </td>
                 </tr>
                 {{/each}}
             </tbody>
         </table>
+        <hr>
+        <div class="float-right pr-5">
+        <h3 class="float-right mr-5">TOTAL:RS.<span id="total">{{totalValue}}</span></h3><br>
+        <a href="/place-order" class="mt-3 btn btn-sucess" style="width: 100%;"><b>Place Order</b></a>
+        </div>
     </div>
 </section>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> <!-- Ensure jQuery is included -->
 
 <script>
-    function changeQuantity(cartId, proId, count) {
-        $.ajax({
-            url: '/change-product-quantity',
-            method: 'POST',
-            data: {
-                cart: cartId,
-                product: proId,
-                count: count
-            },
-            success: (response) => {
-                alert('Quantity updated successfully!');
-                location.reload(); // Optionally reload to see updated cart
-            },
-            error: (jqXHR, textStatus, errorThrown) => {
-                alert('Error: ' + textStatus + ' - ' + errorThrown);
-            }
-        });
-    }
+function changeQuantity(cartId, proId,userId,count) {
+    // Get the current quantity from the DOM element
+    let quantity = parseInt(document.getElementById(proId).innerHTML);
 
-    function removeItem(cartId) {
-        $.ajax({
-            url: '/remove-from-cart',
-            method: 'POST',
-            data: {
-                cart: cartId
-            },
-            success: (response) => {
-                alert('Item removed successfully!');
-                location.reload(); // Optionally reload to see updated cart
-            },
-            error: (jqXHR, textStatus, errorThrown) => {
-                alert('Error: ' + textStatus + ' - ' + errorThrown);
+    // Parse the count to ensure it's an integer
+    count = parseInt(count);
+
+    // Perform an AJAX request
+    $.ajax({
+        url: '/change-product-quantity',  // URL to send the request to
+        data: {
+            user:userId,
+            cart: cartId,       // Cart ID
+            product: proId,     // Product ID
+            count: count,       // Quantity change count
+            quantity: quantity  // Current quantity
+        },
+        method: 'POST',  // HTTP method
+        success: (response) => {  // Function to execute on successful request
+            if (response.removeProduct) {  // Check if the response indicates success
+                alert('Product removed from cart');
+                location.reload();  // Reload the page
+            } else {
+                document.getElementById(proId).innerHTML = quantity + count;  // Update the quantity displayed
+                 document.getElementById('total').innerHTML = response.total;
             }
-        });
-    }
-    
+        }
+    });
+}
+
 </script>
+
+
+
+

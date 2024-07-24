@@ -1,6 +1,7 @@
 var db = require('../config/connection'); // Import the database configuration
 var collection = require('../config/collections'); // Import the collections configuration
 const bcrypt = require('bcrypt'); // Import bcrypt for password hashing
+const { response } = require('express');
 var objectId = require('mongoose').Types.ObjectId;
 
 
@@ -32,22 +33,22 @@ module.exports = {
                 if (user) {
                     let status = await bcrypt.compare(userData.Password, user.Password);// // Compare the provided password with the stored hashed password
                     if (status) {
-                        console.log('Login success');
+                        // console.log('Login success');
                         response.user=user
                         response.status=true
                         resolve(response)
 
                     } else {
-                        console.log('Login failed');
+                        // console.log('Login failed');
                         resolve({status:false})
                     }
                 } else {
-                    console.log('Login failed');
+                    // console.log('Login failed');
                     resolve({status:false})
 
                 }
             } catch (error) {
-                console.error('Error during login:', error);
+                // console.error('Error during login:', error);
                 reject({ success: false, message: 'Internal server error' }); // Reject the promise if an error occurs
             }
         });
@@ -107,7 +108,7 @@ module.exports = {
                 }
             } catch (err) {
                 // Handle any errors that occur during the process.
-                console.error('Error in addToCart:', err);
+                // console.error('Error in addToCart:', err);
                 reject(err); // Reject the promise if an error occurs.
             }
         });
@@ -151,7 +152,7 @@ module.exports = {
                 }
 
             ]).toArray();
-            console.log(cartItems);
+            // console.log(cartItems);
             resolve(cartItems);
         });
     },
@@ -161,6 +162,7 @@ module.exports = {
         return new Promise (async(resolve)=>{
             const database = db.get();
             let cart=await database.collection(collection.CART_COLLECTION).findOne({user: new objectId(userId)})
+            let count = 0;
             if(cart)
             {
                 count=cart.products.length
@@ -171,20 +173,174 @@ module.exports = {
 
     changeProductQuantity:(details)=>{ //details is expected to contain information needed to update the product quantity, such as the cart ID, product ID, and the count to increment or decrement.
         details.count=parseInt(details.count)// converts the count value in details to an integer, ensuring that it’s a number (since it may have been passed as a string).
+        details.quantity=parseInt(details.quantity)
         return new Promise ((resolve,reject)=>{
             const database = db.get();
+           if(details.count==-1 && details.quantity==1){
             database.collection(collection.CART_COLLECTION)
-            .updateOne(
-                {_id:new objectId(details.cart), 'products.item': new objectId(details.product) },//matches the document with the specified cart ID (details.cart) and the specified product ID (details.product) within the products array. new objectId() converts the string IDs to MongoDB ObjectId types.
-                {
-                     $inc: { 'products.$.quantity': details.count }//This is the update operation. $inc increments (or decrements, if details.count is negative) the quantity field of the matched product in the products array by the specified count. The $ operator is used to identify the array element that matches the filter criteria ('products.item': new objectId(details.product)).
-                }
-            ).then(()=>{
-                resolve()
+            .updateOne({_id: new objectId(details.cart)},
+            {
+                $pull:{products:{item: new objectId(details.product)}}
+            }
+            ).then((response)=>{
+                resolve({removeProduct:true})
             })
+           }else{
+            database.collection(collection.CART_COLLECTION)
+            .updateOne({_id: new objectId(details.cart),'products.item':new objectId(details.product)},
+            {
+                $inc:{'products.$.quantity':details.count}
+            }
+
+        ).then((response)=>{
+            resolve({status:true})
 
         })
-    }
+           }
+        })
+    },
 
 
+    getTotalAmount: (userId) => {
+        return new Promise(async (resolve, reject) => {
+            const database = db.get();
+
+            let total = await database.collection(collection.CART_COLLECTION).aggregate([
+                {
+                    $match: { user: new objectId(userId) }
+                },
+                {
+                    $unwind: '$products'
+                },
+                {
+                    $project: {
+                        item: '$products.item',
+                        quantity: '$products.quantity'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: collection.PRODUCT_COLLECTION,
+                        localField: 'item',
+                        foreignField: '_id',
+                        as: 'product'
+                    }
+                },
+                {
+                    $project: {
+                        item: 1,
+                        quantity: 1,
+                        product: {
+                            $arrayElemAt: ['$product', 0]
+                        }
+                    }
+                },
+                {
+                    $addFields: {
+                        'product.PriceNumeric': { $toDouble: '$product.Price' } // Convert price to numeric
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: { $multiply: ['$quantity', '$product.PriceNumeric'] } }
+                    }
+                }
+            ]).toArray();
+
+            if (total.length > 0) {
+                console.log('Total amount is', total[0].total);
+                resolve(total[0].total); // Resolve the total amount
+            } else {
+                resolve(0); // Resolve 0 if no items in cart
+            }
+        });
+    },
+
+    placeOrder:(order, products, total) => {
+        return new Promise(async (resolve, reject) => {
+            try {
+                let status = order['payment-method'] === 'COD' ? 'placed' : 'pending';
+                let userId = order.userId; // Ensure userId is properly assigned
+
+                let orderObj = {
+                    deliveryDetails: {
+                        mobile: order.mobile,
+                        address: order.address,
+                        pincode: order.pincode,
+                    },
+                    userId: new objectId(userId),
+                    paymentMethod: order['payment-method'],
+                    products: products,
+                    totalAmount: total,
+                    status: status,
+                    date:new Date()
+                };
+
+                const database = db.get();
+                await database.collection(collection.ORDER_COLLECTION).insertOne(orderObj);
+                await database.collection(collection.CART_COLLECTION).deleteOne({ user: new objectId(userId) });
+                resolve();
+            } catch (error) {
+                reject(error);
+            }
+        });
+    },
+
+    getCartProductList:(userId)=>{
+        return new Promise(async(resolve,reject)=>{
+            const database = db.get();
+            let cart = await database.collection(collection.CART_COLLECTION).findOne({ user: new objectId(userId) });
+            resolve(cart.products)
+        })
+    },
+
+    getUserOrders:(userId)=>{
+        return new Promise(async(resolve,reject)=>{
+            const database = db.get();
+            let orders = await database.collection(collection.ORDER_COLLECTION)
+            .find({ userId: new objectId(userId)}).toArray();
+            resolve(orders)
+        })
+    },
+
+    getOrderProducts:(orderId)=>{
+        return new Promise(async(resolve,reject)=>{
+            const database = db.get();
+            let ordersItems = await database.collection(collection.ORDER_COLLECTION).aggregate([
+                {
+                    $match: { _id:new objectId(orderId) }
+                },
+                {
+                    $unwind: '$products'
+                },
+                {
+                    $project: {
+                        item: '$products.item',
+                        quantity: '$products.quantity'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: collection.PRODUCT_COLLECTION,
+                        localField: 'item',
+                        foreignField: '_id',
+                        as: 'product'
+                    }
+                },
+                {
+                    $project: {
+                        item: 1,
+                        quantity: 1,
+                        product: {
+                            $arrayElemAt: ['$product', 0]
+                        }
+                    }
+                },
+
+            ]).toArray();
+            resolve(ordersItems)
+        })
+    },
 };
+

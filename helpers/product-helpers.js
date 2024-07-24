@@ -32,7 +32,7 @@ module.exports = {
     deleteProduct:(proId)=>{
         return new Promise((resolve,reject)=>{
             const database = db.get();
-            database.collection(collection.PRODUCT_COLLECTION).removeOne({_id: new objectId(proId)}).then((response)=>{
+            database.collection(collection.PRODUCT_COLLECTION).deleteOne({_id: new objectId(proId)}).then((response)=>{
                 console.log(response);
                 resolve(response)
             })
